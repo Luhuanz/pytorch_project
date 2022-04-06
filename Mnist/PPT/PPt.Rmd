@@ -1,0 +1,446 @@
+---
+title: "&#x2694;&#xFE0F;Mnist手写数据集实验报告"
+subtitle: "基于pytorch与fastai"  
+author: 
+  - "陆佳欢"
+  - "应数2001"
+institute: "数科院"  
+date: '`r Sys.Date()`'
+output:
+  xaringan::moon_reader:
+    css: xaringan-themer.css
+    nature:
+      slideNumberFormat: "%current%"
+      highlightStyle: github
+      highlightLines: true
+      ratio: 16:9
+      countIncrementalSlides: true
+---
+
+```{r setup, include=FALSE}
+options(htmltools.dir.version = FALSE)
+knitr::opts_chunk$set(
+  fig.width=9, fig.height=3.5, fig.retina=3,
+  out.width = "100%",
+  cache = FALSE,
+  echo = TRUE,
+  message = FALSE, 
+  warning = FALSE,
+  hiline = TRUE
+)
+```
+
+```{r xaringan-themer, warning=FALSE, include=FALSE}
+library(xaringanthemer)
+style_mono_light(base_color = "#23395b")
+```
+
+#流程四部分
+
+##  [一、准备工作](#3)
+##  二、实验主体
+##  三、实验总结
+##  四、致谢
+
+---
+class: inverse, center, middle
+
+#  一、准备工作
+
+---
+##准备(March 31)
+###1.beammer主题的制作
+  - 设计logo 
+  - 学习其他大学的源代码
+
+### 成果展示
+![](https://s3.bmp.ovh/imgs/2022/04/04/ca39abe3fcc313d5.png)
+---
+###2.安装 pytorch_gpu以及CUDA、cudnn
+ 
+
+- [安装GPU版本Pytorch](https://blog.csdn.net/baidu_26646129/article/details/88380598?ops_request_misc=%257B%2522request%255Fid%2522%253A%2522164873265716782184627137%2522%252C%2522scm%2522%253A%252220140713.130102334..%2522%257D&request_id=164873265716782184627137&biz_id=0&utm_medium=distribute.pc_search_result.none-task-blog-2~all~top_positive~default-1-88380598.142^v5^pc_search_insert_es_download,143^v6^register&utm_term=anaconda%E5%AE%89%E8%A3%85pytorch-gpu&spm=1018.2226.3001.4187) &#x1F98C;
+- [cuda安装教程+cudnn安装教程](https://blog.csdn.net/sinat_23619409/article/details/84202651) &#x1F98C;
+- [pytorch：测试GPU是否可用](https://blog.csdn.net/weixin_42788078/article/details/103116903) &#x1F98C;
+ 
+#### &#x270D;安装流程中出现的可能问题 
+  >在复制cuda链接的时候需要对应版本。
+  >
+  >直接复制可能下载不了(3个程序包),需要分别开下载。
+  >
+  >不要直接安装pyotch或者用清华源这样会安装cpu版。
+
+---
+class: inverse, center, middle
+
+#  二、实验主体 
+
+---
+### Multilayer perceptron(MLP) 3层
+``` python 
+class MLPNet(nn.Module):
+    def __init__(self, input_size, hidden_size, num_out):
+        super(MLPNet, self).__init__()
+        self.input_size = input_size
+        self.h1 = nn.Linear(input_size, hidden_size)
+        self.relu1 = nn.ReLU()
+        self.out = nn.Linear(hidden_size, num_out)
+        self.softmax=nn.Softmax(dim=1) 
+
+    def forward(self, x):
+        h1 = self.h1(x)
+        a1 = self.relu1(h1)
+        out = self.out(a1)
+        return out
+```
+---
+### MLP实验结果
+
+- pycharm上运行结果
+
+![](https://s3.bmp.ovh/imgs/2022/04/04/7512e374e69fe531.jpg)
+
+
+
+
+
+- jupyter环境中
+
+![](https://s3.bmp.ovh/imgs/2022/04/04/0470f8906e604528.jpg)
+---
+###  LeNet 5层
+```python
+class LeNet(nn.Module):
+    def __init__(self):
+        super(LeNet, self).__init__()  
+        self.conv1 = nn.Conv2d(in_channels=1, out_channels=6, kernel_size=5)  # 6 * 24 * 24
+        self.conv2 = nn.Conv2d(in_channels=6, out_channels=16, kernel_size=5)  # 16 * 8 * 8
+        self.fc1 = nn.Linear(in_features=16 * 4 * 4, out_features=120)  # 16 * 4 * 4
+        self.fc2 = nn.Linear(in_features=120, out_features=84)
+        self.fc3 = nn.Linear(in_features=84, out_features=10)
+        
+    def forward(self, x):
+        x = F.max_pool2d(F.relu(self.conv1(x)), (2, 2))
+        x = F.max_pool2d(F.relu(self.conv2(x)), 2)
+        x = torch.flatten(x, 1)   
+        x = F.relu(self.fc1(x))
+        x = F.relu(self.fc2(x))
+        x = self.fc3(x)
+        return x
+```
+---
+### LeNet实验结果
+- pycharm中运行结果
+
+![](https://s3.bmp.ovh/imgs/2022/04/04/8118c80220bb3f85.jpg)
+
+- jupyter中跑10epoch
+
+ <img src = 'https://s3.bmp.ovh/imgs/2022/04/04/2cdeae124e2e767a.png' width="400" height="213"/>
+
+---
+### AlexNet 8层手写
+```python
+class AlexNet(nn.Module):
+    def __init__(self):
+        super(AlexNet, self).__init__()  
+        self.conv1=nn.Conv2d(in_channels=1,out_channels=96,kernel_size=11,stride=4,padding=1)
+        self.conv2=nn.Conv2d(in_channels=96,out_channels=256,kernel_size=5,padding=2)
+        self.conv3=nn.Conv2d(256,384,kernel_size=3,padding=1)
+        self.conv4=nn.Conv2d(384,384,kernel_size=3,padding=1)
+        self.conv5=nn.Conv2d(384,256,kernel_size=3,padding=1)
+        self.fc1=nn.Linear(6400,4096)
+        self.fc2=nn.Linear(4096,4096)
+        self.fc3=nn.Linear(4096,10)
+    def forward(self, x):                   
+        x=F.max_pool2d(F.relu(self.conv1(x)),kernel_size=3,stride=2)
+        x=F.max_pool2d(F.relu(self.conv2(x)),kernel_size=3,stride=2)
+        x=F.relu(self.conv3(x))
+        x=F.relu(self.conv4(x))
+        x=F.max_pool2d(F.relu(self.conv5(x)),kernel_size=3,stride=2)
+        x=torch.flatten(x,1)
+        x=F.relu(self.fc1(x))
+        x=F.dropout(x,p=0.5)
+        x=F.relu(self.fc2(x))
+        x=F.dropout(x,p=0.5)
+        x=self.fc3(x)
+        return x
+```
+---
+### AlexNet 8层模块化
+```python
+class AlexNet(nn.Module):
+    def __init__(self):
+        super(AlexNet, self).__init__()  #  
+        self.layer1 = nn.Sequential(
+            nn.Conv2d(1,32,kernel_size=3,padding=1),
+            nn.MaxPool2d(kernel_size=2,stride=2)  ,    
+            nn.ReLU(inplace=True),
+        )
+        self.layer2 = nn.Sequential(
+            nn.Conv2d(32,64,kernel_size=3,padding=1),
+            nn.MaxPool2d(kernel_size=2,stride=2),
+            nn.ReLU(inplace=True),
+        )
+        self.layer3 = nn.Sequential(
+            nn.Conv2d(64,128,kernel_size=3,padding=1),
+        )
+        self.layer4 = nn.Sequential(
+            nn.Conv2d(128,256,kernel_size=3,padding=1),
+        )
+      
+```
+
+---
+### AlexNet 8层模块化
+```python
+  self.layer5 = nn.Sequential(
+            nn.Conv2d(256,256,kernel_size=3,padding=1),
+            nn.MaxPool2d(kernel_size=3, stride=2),
+            nn.ReLU(inplace=True),
+        )
+
+      #定义全连接层
+        self.fc1 = nn.Linear(256 * 3 * 3,1024)
+        self.fc2 = nn.Linear(1024,512)
+        self.fc3 = nn.Linear(512,10)
+        #对应十个类别的输出
+
+    def forward(self,x):
+        x = self.layer1(x)
+        x = self.layer2(x)
+        x = self.layer3(x)
+        x = self.layer4(x)
+        x = self.layer5(x)
+        x = x.view(-1,256*3*3)
+        x = self.fc1(x)
+        x = self.fc2(x)
+        x = self.fc3(x)
+
+        return x
+
+```
+---
+### AlexNet 失败
+![](https://s3.bmp.ovh/imgs/2022/04/04/3a0b47717382bd5c.jpg)
+
+**原因**：定义 Adam 优化器用于梯度下降,在第一个epoch的[1,200]出现的较大误差导致整体变差，改用SGD。
+---
+### AlexNet 手写结果
+
+![](https://s3.bmp.ovh/imgs/2022/04/04/e4c2a9c23059b592.jpg)
+    
+   
+**10epoch平均**
+
+![](https://s3.bmp.ovh/imgs/2022/04/04/a6d0ab8fdf5514f4.jpg)
+
+---
+### AlexNet 模块化结果
+
+![](https://s3.bmp.ovh/imgs/2022/04/04/79ecf57c8cdfed7e.jpg)
+
+**10epoch平均**
+
+![](https://s3.bmp.ovh/imgs/2022/04/04/41242590b9e8c418.png)
+
+---
+### GoogLeNet 
+.pull-left[
+####  inception V1
+
+![](https://s3.bmp.ovh/imgs/2022/04/04/fca49cc5df1703be.jpg)
+]
+
+.pull-right[
+
+#### googlenet网络结构
+
+<img src = 'https://s3.bmp.ovh/imgs/2022/04/04/7927d108a41abcd2.jpg' width="400" height="413"/ >
+]
+---
+###  googLeNet
+```python
+class Inception(nn.Module):
+    def __init__(self, in_channels, c1, c2, c3, c4, **kwargs):
+        super(Inception, self).__init__(**kwargs)
+        self.p1_1 = nn.Conv2d(in_channels, c1, kernel_size=1)
+        self.p2_1 = nn.Conv2d(in_channels, c2[0], kernel_size=1)
+        self.p2_2 = nn.Conv2d(c2[0], c2[1], kernel_size=3, padding=1)
+        self.p3_1 = nn.Conv2d(in_channels, c3[0], kernel_size=1)
+        self.p3_2 = nn.Conv2d(c3[0], c3[1], kernel_size=5, padding=2)
+        self.p4_1 = nn.MaxPool2d(kernel_size=3, stride=1, padding=1)
+        self.p4_2 = nn.Conv2d(in_channels, c4, kernel_size=1)
+        
+    def forward(self, x):
+        p1 = F.relu(self.p1_1(x))
+        p2 = F.relu(self.p2_2(F.relu(self.p2_1(x))))
+        p3 = F.relu(self.p3_2(F.relu(self.p3_1(x))))
+        p4 = F.relu(self.p4_2(self.p4_1(x))
+        return torch.cat((p1, p2, p3, p4), dim=1)
+
+```
+---
+```python
+ class GoogleNet(torch.nn.Module):
+    def __init__(self):
+        super(GoogleNet,self).__init__()
+        self.block1=b1 = nn.Sequential(nn.Conv2d(1, 64, kernel_size=7, stride=2, padding=3),
+                   nn.ReLU(),
+                   nn.MaxPool2d(kernel_size=3, stride=2, padding=1))
+        self.block2=nn.Sequential(nn.Conv2d(64, 64, kernel_size=1),
+                   nn.ReLU(),
+                   nn.Conv2d(64, 192, kernel_size=3, padding=1),
+                   nn.ReLU(),
+                   nn.MaxPool2d(kernel_size=3, stride=2, padding=1))
+        self.block3=nn.Sequential(Inception(192, 64, (96, 128), (16, 32), 32),
+                   Inception(256, 128, (128, 192), (32, 96), 64),
+                   nn.MaxPool2d(kernel_size=3, stride=2, padding=1))
+        self.block4=nn.Sequential(Inception(480, 192, (96, 208), (16, 48), 64),
+                   Inception(512, 160, (112, 224), (24, 64), 64),
+                   Inception(512, 128, (128, 256), (24, 64), 64),
+                   Inception(512, 112, (144, 288), (32, 64), 64),
+                   Inception(528, 256, (160, 320), (32, 128), 128),
+                   nn.MaxPool2d(kernel_size=3, stride=2, padding=1))
+      
+```
+---
+```python
+   self.block5=nn.Sequential(Inception(832, 256, (160, 320), (32, 128), 128),
+                   Inception(832, 384, (192, 384), (48, 128), 128),
+                   nn.AdaptiveAvgPool2d((1,1)),
+                   nn.Flatten()) 
+    def forward(self,x):
+        x=self.block1(x)
+        x=self.block2(x)
+        x=self.block3(x)
+        x=self.block4(x)
+        x=self.block5(x)        
+        return x
+
+```
+---
+ ###不推荐写法(手写)
+ 
+![](https://s3.bmp.ovh/imgs/2022/04/04/b9ee90b416d402b8.jpg)
+
+
+---
+### GoogLeNet实验结果
+
+![](https://s3.bmp.ovh/imgs/2022/04/04/5a2b70dd170ff581.jpg)
+
+**原因**：未知(没有loss特别大的值，均2左右)
+
+---
+### 基于fastai的ResNet
+ 
+####  ResNet18
+``` python
+# 使用路径创建一个图像数据转换器对象
+dls = ImageDataLoaders.from_folder(path, train='training', 
+                                   valid='testing')
+learn = cnn_learner(dls, resnet18, pretrained=False,
+                    loss_func=LabelSmoothingCrossEntropy(),  #标签平滑
+                    metrics=accuracy)
+learn.fit_one_cycle(1, 0.1)
+```
+
+ 
+####  ResNet34
+
+``` pyrhon
+
+# 使用路径创建一个图像数据转换器对象
+dls = ImageDataLoaders.from_folder(path, train='training', 
+                                   valid='testing')
+learn = cnn_learner(dls, resnet34, pretrained=False,
+                    loss_func=LabelSmoothingCrossEntropy(),  #标签平滑
+                    metrics=accuracy)
+learn.fit_one_cycle(1, 0.1)
+ 
+```
+---
+###实验结果对比
+
+| | epoch	|train_loss	|valid_loss|	accuracy	|time|
+|- - - | - - -| - - -| - - -| - -- | - - -| - - -|     
+|**ResNet18**| 0	|0.561522|	0.526307|	0.991500|	12:55|
+|**ResNet34**|0	|0.583426|	0.594473|	0.986200|	22:21|
+
+---
+
+### unfreez()后
+.pull-left[#### ResNet18
+
+|epoch|	train_loss|	valid_loss|	accuracy|	time|
+|- - -|- - - |- - -|- - - |- - -|
+|0|	0.559923|	0.525104|	0.990900|	10:18|
+|1|	0.548604|	0.524869|	0.991600|	10:19|
+|2|	0.549611|	0.524795|	0.991000|	10:22|
+
+
+<img src = 'https://s3.bmp.ovh/imgs/2022/04/04/4276d47a6a527466.png'width="400" height="213"/ >
+]
+
+.pull-right[#### ResNet34
+
+|epoch|	train_loss|	valid_loss|	accuracy|	time|
+|- -  -|- - -| - - -| - - -| - - -|
+|0|	0.578651|	0.543047|	0.987100|	16:14|
+|1	|0.581934	|2.380104	|0.983400	|16:49|
+
+
+
+<img src = 'https://s3.bmp.ovh/imgs/2022/04/04/8040b52fde2f712e.png'width="400" height="213"/ >
+]
+
+---
+class: inverse, center, middle
+
+#  三、实验总结
+
+---
+
+## summary
+
+- cv来讲，对图片的尺寸处理影响网络的书写。
+
+
+- 选择不同的优化器可能影响模型的效果而且是不可逆的。
+
+
+- 写网络主体的时候尽可能使用模块化，这样会很清晰。
+
+
+- 数据增强是建模的关键部分，它严重影响模型的acc,train以及test都是差不多的。
+
+
+- 可以通过集成的包，来做DNN,如D2l,或者fastai,其中fastai在数据增强部分做的很好,它有一种mixup机制,比pytorch优秀。
+
+---
+class: inverse, center, middle
+
+# 四、源文件与致谢
+---
+## 本次实验相关jupyter及py文件
+
+.left-column[
+#### [源代码及幻灯片](https://github.com/Luhuanz)🗹
+
+#### [beamer下载地址](https://www.latexstudio.net/index/lists/barSearch/text/%E6%B1%9F%E8%8B%8F%E5%A4%A7%E5%AD%A6)🗹
+
+#### [R写轮眼](https://zhuanlan.zhihu.com/p/346996909)🗹
+]
+
+
+
+
+---
+class: center, middle
+
+# Thanks!
+
+
+
+

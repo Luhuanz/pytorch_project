@@ -1,0 +1,13 @@
+\fancyfoot{ }
+\begin{abstract}
+    本文通过在MNist数据集上通过分析各种网络结构正确认识CV，具体认识与实现模型以求更加深刻的认识计算机视觉。\par
+    实验的第一部分：自制了beamer主题，目的用于报告的展示。以求达到能够清晰表达的作用，为了能够提高实验的效率，本文使用Anaconda也重新安装了pytorch\_gpu版.\par
+    实验的第二部分：从五部分来建模。首先通过写MLP模型，具体且清晰的实现了一般DNN建模的步骤，并且在初步微调模型得到了test集上\textbf{97\%}的成绩。接着加大网络的深度，通过建立LeNet、AlexNet丰富了报告的内容，同时得到了更高的acc，其中LeNet跑10$epoch$模型平均准确率有\textbf{97.6\%},而AlexNet更深达到了\textbf{99.26\%},也是这5个网络中最高的acc。并且在AlexNet中，分别对比了手写以及模块化的不同，同时发现优化器在选择adam的时候再第一个epoch会出现很大的误差，而且这种情况不可逆，因而得选择SGD。接着使用GoogLeNet去加大网络的深度，使用了Inception V1块，但是遗憾的是GooLeNet在跑test的时候并未得到预期的结果。在换成SGD的情况下依旧失效，未知其原因。最后，为了避免ResNet出现同样的情况。我使用目前正在使用的fastai，使用它的轮子进行\textbf{迁移学习}。分别跑了ResNet18以及ResNet34得到acc分别是99\%、98\%。模型的网络变深,test的结果反倒变差了，尽管ResNet有BN层，但是有理由相信，模型已经出现了轻微的过拟合。\par 
+    实验的第三部分：在具体认识模型的同时，提供了一些提高模型准确率的数据增强手段。
+    
+    
+\end{abstract}
+
+\textbf{关键词：} pytorch \quad MNIST\quad GoogNet\quad ResNet\quad fastai \quad 迁移学习
+\newpage
+\fancyfoot[C]{\bfseries\thepage}

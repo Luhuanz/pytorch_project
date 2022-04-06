@@ -1,0 +1,45 @@
+\documentclass{ujs}
+\usepackage[utf8x]{inputenc}
+\usepackage{graphicx} %插入图片的宏包
+\usepackage{float} %设置图片浮动位置的宏包
+\usepackage{subfigure} %插入多图时用子图显示的宏包
+\usepackage{verbatim}% 多行注释
+\usepackage[framemethod=TikZ]{mdframed}
+\usepackage[colorlinks,linkcolor=black]{hyperref}
+\usepackage{multirow}
+\usepackage{booktabs}
+\usepackage{bigstrut}
+\usepackage{hyperref}                      
+\graphicspath{{imgs/}}
+\major{CV}
+\name{陆佳欢}
+\stuid{3190105095}
+\college{数科院}
+\date{\zhtoday}
+\expname{MNIST}
+\major{应用数学系}
+\course{基于手写数据集的CV探讨}
+\begin{document}
+\makecover
+
+\input{chapter/abstract.tex}
+
+\thispagestyle{empty}
+
+\tableofcontents
+\newpage 
+
+% 目录后开始计数页码
+\setcounter{page}{1}
+
+\input{chapter/experiment.tex}
+
+\input{chapter/conclusion.tex}
+
+\input{chapter/reference.tex}
+
+\appendix
+
+\input{chapter/appendix.tex}
+
+\end{document}
