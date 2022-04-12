@@ -1,0 +1,183 @@
+% beamerthemeHeverlee.sty v1.0 by J. Kren, September 2020
+\mode<presentation>
+
+
+ %%		
+ %%  COLOURS and FONTS STYLE SET-UP
+ %%
+\usepackage{lmodern}					%text font (Latin Modern)
+
+% Colour definitions
+	\definecolor{pblue}	{RGB}{49,130,189}		%primary blue
+	\definecolor{gray}		{gray}{.6}			%gray
+	\definecolor{lgray}		{gray}{.97}			%light gray for theorem background
+
+% Text colours
+	\hypersetup{colorlinks,linkcolor=pblue,urlcolor=pblue} %link colors
+	\urlstyle{sf}	%url addresses are sans-serif (not typewritter)
+			
+	\setbeamercolor{normal text}	{fg = black}
+	\setbeamercolor{frametitle}		{fg=pblue, bg=lgray}
+	\setbeamercolor{section in toc}{fg=pblue}
+	\setbeamercolor{section in toc shaded}{fg=pblue}
+
+	\setbeamercolor{item}			{fg=pblue}
+	\setbeamercolor{subitem}		{fg=pblue}
+	\setbeamercolor{subsubitem}		{fg=pblue}
+	\setbeamercolor{text}			{fg=white,bg=pblue}	%text block colour
+	\setbeamercolor{caption name}	{fg=black}	%figure, table captions
+	\setbeamercolor{abstract title}	{fg=pblue}	%abstract title
+	
+% Blocks, theorem-like environments and colorboxes
+	\setbeamerfont{block title} {size=\normalsize} %block title font size
+	\setbeamercolor{block title}{bg=lgray,fg=pblue} %block title colour
+	\setbeamercolor{block body} {bg=lgray,fg=black}	%block body colour
+	\setbeamertemplate{qed symbol}{\color{pblue} $\square$}	%end of proof symbol
+	
+	\setbeamercolor{block title alerted}{bg=white!95!red} %alertbloc title (red)
+	\setbeamercolor{block body alerted}{bg=white!95!red} %alertbloc body
+	
+	\setbeamercolor{block title example}{bg=white!95!pblue,fg=pblue} %example block title (blue)
+	\setbeamercolor{block body example}{bg=white!95!pblue,fg=black}	%example block body
+	
+	\setbeamercolor{button}		{bg= lgray,fg=pblue} %click buttons
+
+    \setbeamercolor{navigation symbols}{fg=gray,bg=lgray}
+    \setbeamercolor{navigation symbols dimmed}{fg=gray,bg=lgray}
+    \setbeamercolor*{structure}{fg=gray, bg=lgray}  % navigation/progress bar
+    
+ %%		
+ %%  INNER THEME
+ %%
+
+	\setbeamertemplate{sections/subsections in toc}[circle]	%toc symbols
+	\setbeamersize{text margin left=2.5em,text margin right=2.5em} 	%text margins
+
+	%itemize list
+		\setbeamertemplate{itemize item}[triangle] 	%item symbol (triangle)
+		\setbeamertemplate{itemize subitem}{ \raisebox{.2em}{\tiny{$>$}}  }			%subitem symbol (>) 
+		\setbeamertemplate{itemize subsubitem}{-}			%subsubitem symbol (short hyphen)
+
+	%enumerate list
+		\setbeamertemplate{enumerate item}{\small  \insertenumlabel  \enspace }		%enumerate symbol
+		\setbeamertemplate{enumerate subitem}{\scriptsize \raisebox{.085em} \insertsubenumlabel } 	%subenumerate symbol
+		\setbeamertemplate{enumerate subsubitem}{\tiny \raisebox{.18em} \insertsubsubenumlabel } 	%subenumerate symbol
+
+
+
+ %%		
+ %%  OUTER THEME
+ %%
+	\setbeamertemplate{navigation symbols}{} %remove the navigation symbols
+
+	
+	%head frametitle
+	\setbeamertemplate{frametitle}
+		{
+		\vspace{1.2em}
+		{\hspace{-1em}\large{\thesection \hspace{0.5em} \insertframetitle} {\hfill\scriptsize\color{gray}$\mid$\,\insertframenumber} \rule[-.3\baselineskip]{0pt}{\baselineskip}} 
+		}
+
+
+	%footline
+	\defbeamertemplate{footline}{infoline}
+		{
+		\hypersetup{hidelinks} %disable link colors
+		\hspace{2.5em} \textcolor{gray}{ \insertshortauthor \hfill \insertshorttitle \hfill \insertshortinstitute} \hspace{2.5em}
+		\vspace{2pt}
+		}
+
+	\defbeamertemplate{footline}{navigation}
+		{
+		\hypersetup{hidelinks} %disable link colors
+		\resizebox{\textwidth}{!}{\insertnavigation{\textwidth}{}{}}
+		\vspace{2pt}		
+		}
+
+    \defbeamertemplate{footline}{navsym}
+		{
+		\hypersetup{hidelinks} %disable link colors
+		\hfill \color{gray}\insertslidenavigationsymbol%
+            \insertframenavigationsymbol%
+            \insertsubsectionnavigationsymbol%
+            \insertsectionnavigationsymbol%
+            \insertdocnavigationsymbol%
+            \insertbackfindforwardnavigationsymbol%
+            \hspace{2.5em}
+		\vspace{2pt}
+		}
+    
+
+ %%		
+ %%  TITLE PAGE
+ %%
+
+\setbeamertemplate{title page}
+{
+	\setbeamercolor{titlebox1} {fg=white,bg=pblue}
+
+	\null\vfill\null
+	\begin{center}~
+		
+		\vspace{-48pt}
+		\setlength\lineskip{46pt}
+		\hspace{-0.01\paperwidth}%
+		\begin{beamercolorbox}[wd=1.02\paperwidth,sep=12pt,center]{titlebox1}	
+		{\Large\bfseries \inserttitle}
+
+		\vspace{6pt}
+		\insertsubtitle
+		\end{beamercolorbox}
+
+    \vspace{10pt}
+	\ifx\inserttitlegraphic\empty
+    % when no title graphic is used:
+			\insertauthor
+			
+			\vspace{6pt}
+			\insertinstitute
+			
+			\vspace{6pt}
+			\insertdate
+
+			
+	\else
+	% when in combination with title graphic, make two columns (L=text, R=graphic)
+		\begin{columns}[c]
+			\column{0.3\textwidth}
+				\centering
+				\insertauthor
+				
+				\vspace{6pt}
+				\insertinstitute
+				
+				\vspace{6pt}
+				\insertdate
+
+		     \column{0.3\textwidth}
+		     	\centering
+	        	\inserttitlegraphic
+		     
+	     \end{columns}
+	\fi			
+	\vspace{12pt}
+	\end{center}
+	}
+
+
+
+ %%		
+ %%  TABLE OF CONTENTS (displayed before each section)
+ %%
+	\AtBeginSection[] {
+		\begin{frame}
+	    	\frametitle{Outline} 
+	    	\vskip 2mm
+		    	{
+		    	\hypersetup{hidelinks} %disable link colors
+				\hfill	{\large\parbox {.95\textwidth}{\tableofcontents[currentsection,hideothersubsections]}}
+				}
+		\end{frame}
+	}
+\mode
+<all> 
