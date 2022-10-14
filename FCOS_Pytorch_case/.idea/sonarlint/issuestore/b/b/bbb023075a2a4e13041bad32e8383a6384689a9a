@@ -1,0 +1,7 @@
+
+tpython:S117 "WRename this local variable "G_area" to match the regular expression ^[_a-z][a-z0-9_]*$.(«Ú­ìøÿÿÿÿ
+Bpython:S1481V"%Remove the unused local variable "m".(À§Îóùÿÿÿÿ
+7python:S125˜"Remove this commented out code.(•§­
+7python:S125ç"Remove this commented out code.(Í¯ò‡
+<python:S125®"Remove this commented out code.(Ä™íğüÿÿÿÿ
+<python:S125Ë"Remove this commented out code.(Ä™íğüÿÿÿÿ

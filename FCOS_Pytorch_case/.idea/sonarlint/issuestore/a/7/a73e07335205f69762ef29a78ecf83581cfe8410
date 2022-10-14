@@ -1,0 +1,6 @@
+
+{python:S101J"_Rename class "FCOS_" to match the regular expression ^_?([A-Z_][a-zA-Z0-9]*|[a-z_][a-z0-9_]*)$.(úœ‚Ãûÿÿÿÿ
+mpython:S117t"VRename this local variable "all_P" to match the regular expression ^[_a-z][a-z0-9_]*$.(Ú¥×
+;python:S125Q"Remove this commented out code.(áÿ›íüÿÿÿÿ
+7python:S125¿"Remove this commented out code.(õÁ’Š
+mpython:S117E"VRename this local variable "all_P" to match the regular expression ^[_a-z][a-z0-9_]*$.(Ú¥×
