@@ -17,12 +17,12 @@ opts = struct();
 opts.method = 'grad_huber';
 opts.verbose = 0;
 opts.maxit = 4000;
-opts.ftol = 1e-8;
+opts.ftol = 1e-5;
 opts.alpha0 = 1 / L;
 [x, out] = LASSO_con(x0, A, b, mu, opts);
 f_star = min(out.fvec);
 opts.verbose = 0;
-opts.maxit = 400;
+opts.maxit = 500;
 if opts.verbose
     fprintf('mu=1e-3\n');
 end
