@@ -1,6 +1,6 @@
 # SQL
 
-## Select 查
+## Select `查`
 
 ### DISTINCT 
 
