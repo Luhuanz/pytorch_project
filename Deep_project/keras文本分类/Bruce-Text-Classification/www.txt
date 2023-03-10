@@ -1,0 +1,2 @@
+embedding + vocab ->    accuracy: 0.9154
+no embedding +no vocab-> 0.9104
