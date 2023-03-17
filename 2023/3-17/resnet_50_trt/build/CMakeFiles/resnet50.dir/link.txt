@@ -1,0 +1,1 @@
+/usr/bin/g++  -g  -rdynamic CMakeFiles/resnet50.dir/resnet50.cpp.o  -o resnet50   -L/usr/local/cuda/lib64  -L/home/u1/TensorRT-8.4.2.4.Linux.x86_64-gnu.cuda-11.6.cudnn8.4/TensorRT-8.4.2.4/lib  -Wl,-rpath,/usr/local/cuda/lib64:/home/u1/TensorRT-8.4.2.4.Linux.x86_64-gnu.cuda-11.6.cudnn8.4/TensorRT-8.4.2.4/lib -lnvinfer -lcudart 
