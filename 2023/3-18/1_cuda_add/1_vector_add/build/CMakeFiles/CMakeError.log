@@ -1,0 +1,55 @@
+Determining if the pthread_create exist failed with the following output:
+Change Dir: /home/chaucerg/Desktop/cuda_learning/learning_gzh/1_vector_add/build/CMakeFiles/CMakeTmp
+
+Run Build Command:"/usr/bin/make" "cmTC_44e44/fast"
+/usr/bin/make -f CMakeFiles/cmTC_44e44.dir/build.make CMakeFiles/cmTC_44e44.dir/build
+make[1]: Entering directory '/home/chaucerg/Desktop/cuda_learning/learning_gzh/1_vector_add/build/CMakeFiles/CMakeTmp'
+Building C object CMakeFiles/cmTC_44e44.dir/CheckSymbolExists.c.o
+/usr/bin/cc   -fPIC    -o CMakeFiles/cmTC_44e44.dir/CheckSymbolExists.c.o   -c /home/chaucerg/Desktop/cuda_learning/learning_gzh/1_vector_add/build/CMakeFiles/CMakeTmp/CheckSymbolExists.c
+Linking C executable cmTC_44e44
+/usr/bin/cmake -E cmake_link_script CMakeFiles/cmTC_44e44.dir/link.txt --verbose=1
+/usr/bin/cc -fPIC     -rdynamic CMakeFiles/cmTC_44e44.dir/CheckSymbolExists.c.o  -o cmTC_44e44 
+CMakeFiles/cmTC_44e44.dir/CheckSymbolExists.c.o: In function `main':
+CheckSymbolExists.c:(.text+0x1b): undefined reference to `pthread_create'
+collect2: error: ld returned 1 exit status
+CMakeFiles/cmTC_44e44.dir/build.make:97: recipe for target 'cmTC_44e44' failed
+make[1]: *** [cmTC_44e44] Error 1
+make[1]: Leaving directory '/home/chaucerg/Desktop/cuda_learning/learning_gzh/1_vector_add/build/CMakeFiles/CMakeTmp'
+Makefile:126: recipe for target 'cmTC_44e44/fast' failed
+make: *** [cmTC_44e44/fast] Error 2
+
+File /home/chaucerg/Desktop/cuda_learning/learning_gzh/1_vector_add/build/CMakeFiles/CMakeTmp/CheckSymbolExists.c:
+/* */
+#include <pthread.h>
+
+int main(int argc, char** argv)
+{
+  (void)argv;
+#ifndef pthread_create
+  return ((int*)(&pthread_create))[argc];
+#else
+  (void)argc;
+  return 0;
+#endif
+}
+
+Determining if the function pthread_create exists in the pthreads failed with the following output:
+Change Dir: /home/chaucerg/Desktop/cuda_learning/learning_gzh/1_vector_add/build/CMakeFiles/CMakeTmp
+
+Run Build Command:"/usr/bin/make" "cmTC_cda42/fast"
+/usr/bin/make -f CMakeFiles/cmTC_cda42.dir/build.make CMakeFiles/cmTC_cda42.dir/build
+make[1]: Entering directory '/home/chaucerg/Desktop/cuda_learning/learning_gzh/1_vector_add/build/CMakeFiles/CMakeTmp'
+Building C object CMakeFiles/cmTC_cda42.dir/CheckFunctionExists.c.o
+/usr/bin/cc   -fPIC -DCHECK_FUNCTION_EXISTS=pthread_create   -o CMakeFiles/cmTC_cda42.dir/CheckFunctionExists.c.o   -c /usr/share/cmake-3.10/Modules/CheckFunctionExists.c
+Linking C executable cmTC_cda42
+/usr/bin/cmake -E cmake_link_script CMakeFiles/cmTC_cda42.dir/link.txt --verbose=1
+/usr/bin/cc -fPIC -DCHECK_FUNCTION_EXISTS=pthread_create    -rdynamic CMakeFiles/cmTC_cda42.dir/CheckFunctionExists.c.o  -o cmTC_cda42 -lpthreads 
+/usr/bin/ld: cannot find -lpthreads
+collect2: error: ld returned 1 exit status
+CMakeFiles/cmTC_cda42.dir/build.make:97: recipe for target 'cmTC_cda42' failed
+make[1]: *** [cmTC_cda42] Error 1
+make[1]: Leaving directory '/home/chaucerg/Desktop/cuda_learning/learning_gzh/1_vector_add/build/CMakeFiles/CMakeTmp'
+Makefile:126: recipe for target 'cmTC_cda42/fast' failed
+make: *** [cmTC_cda42/fast] Error 2
+
+
