@@ -1,0 +1,394 @@
+//
+// Created by chaucer on 2021/7/7.
+//
+#include "NvInfer.h" //包含了NVIDIA推理引擎库的主头文件，用于定义推理引擎的核心数据结构和函数接口
+#include "cuda_runtime_api.h" //包含了CUDA运行时库的头文件，用于定义CUDA的运行时API函数。
+#include "logging.h"          // 包含了NVIDIA推理引擎库的日志输出功能的头文件，用于输出调试信息和错误日志。
+#include <iostream>
+#include <fstream>
+#include <map>
+#include <sstream> //包含了C++标准库的字符串流头文件，用于字符串和其他数据类型之间的转换。
+#include <vector>
+#include <chrono> //包含了C++标准库的时间头文件，用于计算程序的执行时间。
+#include <cmath>
+//用于简化CUDA函数调用时的错误检查操作。 
+#define CHECK(status) \
+    do{\
+        auto ret =(status);\
+        if (ret != 0)\
+        {\
+            std::cerr << "cuda failure: " << ret << std::endl;\
+            abort();\
+        }\
+    }while (0)
+
+static const int INPUT_H = 224;
+static const int INPUT_W = 224;
+static const int OUTPUT_SIZE = 1000;
+
+const char* INPUT_BLOB_NAME = "data";
+const char* OUTPUT_BLOB_NAME = "prob";
+
+using namespace nvinfer1; //表示在当前作用域内使用nvinfer1命名空间中的所有成员，不需要使用全限定名。
+
+static Logger gLogger;
+
+//从文件中读取TensorRT模型的权重数据，并将其保存到一个std::map<std::string, Weights>类型的容器中。
+std::map<std::string, Weights> loadWeights(const std::string file)
+{
+    std::cout << "Loading weights: " << file << std::endl;
+
+    std::map<std::string, Weights> weightMap;
+    //函数打开权重数据文件，并检查文件是否成功打开。如果文件打开失败，则会抛出一个assertion，表示无法加载权重数据文件。
+    std::ifstream input(file);
+    assert(input.is_open() && "Unable to load weight file.");
+    //函数从文件中读取一个int32_t类型的数值count，表示接下来要读取的权重数据的数量。
+    //如果count小于等于0，则会抛出一个assertion，表示读取到了无效的权重数据文件。
+    int32_t count;
+    input >> count;
+    assert(count > 0 && "Invalid weight map file.");
+    //函数循环读取count个权重数据，每个权重数据包含了名称、类型和数值。
+    //函数使用std::string类型的name保存权重数据的名称，使用uint32_t类型的size保存权重数据的大小。
+    while(count--)
+    {
+        Weights wt{DataType::kFLOAT, nullptr, 0};
+        uint32_t size;
+
+        std::string name;
+        input >> name >> std::dec >> size;
+        wt.type = DataType::kFLOAT;
+
+        uint32_t * val = reinterpret_cast<uint32_t*>(malloc(sizeof(val) * size));
+        for(uint32_t x=0, y=size; x<y; ++x)
+        {
+            input >> std::hex >> val[x];
+        }
+        wt.values = val;
+        wt.count = size;
+        weightMap[name] = wt;
+    }
+    return weightMap;
+}
+
+//构造BN层 在TensorRT的网络中添加BatchNorm2d层。 
+IScaleLayer* addBatchNorm2d(INetworkDefinition *network, std::map<std::string, Weights>& weightMap, ITensor& input, std::string lname, const float eps)
+{
+    /*
+    向IScaleLayer的指针，接受四个参数：指向INetworkDefinition的指针network，
+    存储权重参数的map weightMap，
+    输入的ITensor input，BatchNorm2d层的名称lname和参数eps。
+    */
+    //从权重参数map中获取gamma，beta，mean和var的指针。
+    float *gamma = (float*)weightMap[lname + ".weight"].values;
+    float *beta = (float*)weightMap[lname + ".bias"].values;
+    float *mean = (float*)weightMap[lname + ".running_mean"].values;
+    float *var = (float*)weightMap[lname + ".running_var"].values;
+    //获取running_var参数的count值，该值等于gamma，beta，mean和var的长度。
+    int len = weightMap[lname + ".running_var"].count;
+
+    std::cout << "len" <<len << std::endl;
+    //计算BatchNorm2d的scale参数的值，将其存储在scale中。
+    float *scval = reinterpret_cast<float*>(malloc(sizeof(float)*len));
+    for (int i=0; i < len; i++)
+    {
+        scval[i] = gamma[i] / sqrt(var[i] + eps);
+    }
+    Weights scale{DataType::kFLOAT, scval, len};
+
+    float *shval = reinterpret_cast<float*>(malloc(sizeof(float) * len));
+    for (int i = 0; i<len;i++)
+    {
+        shval[i] = beta[i] - mean[i] * gamma[i] /sqrt(var[i] + eps);
+    }
+    Weights shift{DataType::kFLOAT, shval, len};
+
+    float *pval = reinterpret_cast<float*>(malloc(sizeof(float) * len));
+    for (int i = 0; i < len; i++)
+    {
+        pval[i] = 1.0;
+    }
+    Weights power{DataType::kFLOAT, pval, len};
+    //将计算得到的scale、shift和power参数添加到权重参数map中。
+    weightMap[lname + ".scale"] = scale;
+    weightMap[lname + ".shift"] = shift;
+    weightMap[lname + ".power"] = power;
+    /*
+    创建并返回一个IScaleLayer指针，该指针指向网络中的一个Scale层。
+    其中，input为输入的ITensor，ScaleMode::kCHANNEL表示沿通道方向进行缩放，
+    shift、scale和power为上一步中计算得到的参数。
+    最后使用assert语句检查是否创建成功。
+    */
+    IScaleLayer* scale_1 = network ->addScale(input, ScaleMode::kCHANNEL, shift, scale, power);
+    assert(scale_1);
+    return scale_1;
+}
+
+//构造IN层
+IScaleLayer* addInstanceNorm2d(INetworkDefinition *network, std::map<std::string, Weights>& weightMap, ITensor& input, std::string lname, const float eps)
+{
+    int len = weightMap[lname + ".weight"].count;
+    IReduceLayer* reduce1 = network ->addReduce(input, ReduceOperation::kAVG, 6, true);
+    assert(reduce1);
+
+    IElementWiseLayer* ew1 = network ->addElementWise(input, *reduce1->getOutput(0), ElementWiseOperation::kSUM);
+    assert(ew1);
+
+    const static float pval1[3]{0.0, 1.0, 2.0};
+    Weights wshift1{DataType::kFLOAT, pval1, 1};
+    Weights wscale1{DataType::kFLOAT, pval1+1, 1};
+    Weights wpower1{DataType::kFLOAT, pval1+2, 1};
+
+    IScaleLayer* scale1 = network->addScale(*ew1->getOutput(0), ScaleMode::kUNIFORM, wshift1, wscale1, wpower1);
+    assert(scale1);
+
+    IReduceLayer* reduce2 = network ->addReduce(*scale1->getOutput(0), ReduceOperation::kAVG, 6, true);
+    assert(reduce2);
+
+    const static float pval2[3]{eps, 1.0, 0.5};
+    Weights wshift2{DataType::kFLOAT, pval2, 1};
+    Weights wscale2{DataType::kFLOAT, pval2+1, 1};
+    Weights wpower2{DataType::kFLOAT, pval2+2, 1};
+
+    IScaleLayer* scale2 = network->addScale(*reduce2->getOutput(0), ScaleMode::kUNIFORM, wshift2, wscale2, wpower2);
+    assert(scale1);
+
+    IElementWiseLayer* ew2 = network ->addElementWise(*ew1->getOutput(0), *scale2->getOutput(0), ElementWiseOperation::kDIV);
+    assert(ew2);
+
+    float* pval3 = reinterpret_cast<float*>(malloc(sizeof(float) * len));
+    std::fill_n(pval3, len, 1.0);
+    Weights wpower3{DataType::kFLOAT, pval3, len};
+    weightMap[lname + ".power3"] = wpower3;
+
+    IScaleLayer* scale3 = network->addScale(*ew2->getOutput(0), ScaleMode::kCHANNEL, weightMap[lname + ".bias"], weightMap[lname + ".weight"], wpower3);
+    assert(scale3);
+
+    return scale3;
+}
+
+//构造IBN层
+IConcatenationLayer * addIBN(INetworkDefinition *network, std::map<std::string, Weights>& weightMap, ITensor& input, std::string lname)
+{
+    Dims spliteDims = input.getDimensions();
+
+    //切片1
+    ISliceLayer *split1 = network ->addSlice(input, Dims3{0, 0, 0,}, Dims3{spliteDims.d[0]/2, spliteDims.d[1], spliteDims.d[2]}, Dims3{1, 1, 1});
+    assert(split1);
+
+    //切片2
+    ISliceLayer *split2 = network ->addSlice(input, Dims3{spliteDims.d[0]/2, 0, 0,}, Dims3{spliteDims.d[0]/2, spliteDims.d[1], spliteDims.d[2]}, Dims3{1, 1, 1});
+    assert(split2);
+
+    auto in1 = addInstanceNorm2d(network, weightMap, *split1->getOutput(0), lname+"IN", 1e-5);
+    auto bn1 = addBatchNorm2d(network, weightMap, *split2->getOutput(0), lname+"BN", 1e-5);
+
+    ITensor* tensor1[] = {in1 ->getOutput(0), bn1->getOutput(0)};
+    //切片1与//切片2拼接
+    auto cat1 = network ->addConcatenation(tensor1, 2);
+    assert(cat1);
+
+    return cat1;
+}
+
+//构造常规ResNet的bottleneck
+IActivationLayer* bottleneck(INetworkDefinition *network, std::map<std::string, Weights>& weightMap, ITensor& input, int inch, int outch, int stride, std::string lname)
+{
+    Weights emptywts{DataType::kFLOAT, nullptr, 0};
+
+    IConvolutionLayer* conv1 = network->addConvolutionNd(input, outch, DimsHW{1, 1}, weightMap[lname + "conv1.weight"], emptywts);
+    assert(conv1);
+
+    IScaleLayer* bn1 = addBatchNorm2d(network, weightMap, *conv1->getOutput(0), lname + "bn1", 1e-5);
+
+    IActivationLayer* relu1 = network->addActivation(*bn1->getOutput(0), ActivationType::kRELU);
+    assert(relu1);
+
+    IConvolutionLayer* conv2 = network->addConvolutionNd(*relu1->getOutput(0), outch, DimsHW{3, 3}, weightMap[lname + "conv2.weight"], emptywts);
+    assert(conv2);
+    conv2->setStrideNd(DimsHW{stride, stride});
+    conv2->setPaddingNd(DimsHW{1, 1});
+
+    IScaleLayer* bn2 = addBatchNorm2d(network, weightMap, *conv2->getOutput(0), lname + "bn2", 1e-5);
+
+    IActivationLayer* relu2 = network->addActivation(*bn2->getOutput(0), ActivationType::kRELU);
+    assert(relu2);
+
+    IConvolutionLayer* conv3 = network->addConvolutionNd(*relu2->getOutput(0), outch * 4, DimsHW{1, 1}, weightMap[lname + "conv3.weight"], emptywts);
+    assert(conv3);
+
+    IScaleLayer* bn3 = addBatchNorm2d(network, weightMap, *conv3->getOutput(0), lname + "bn3", 1e-5);
+
+    IElementWiseLayer* ew1;
+    if (stride != 1 || inch != outch * 4) {
+        IConvolutionLayer* conv4 = network->addConvolutionNd(input, outch * 4, DimsHW{1, 1}, weightMap[lname + "downsample.0.weight"], emptywts);
+        assert(conv4);
+        conv4->setStrideNd(DimsHW{stride, stride});
+
+        IScaleLayer* bn4 = addBatchNorm2d(network, weightMap, *conv4->getOutput(0), lname + "downsample.1", 1e-5);
+        ew1 = network->addElementWise(*bn4->getOutput(0), *bn3->getOutput(0), ElementWiseOperation::kSUM);
+    } else {
+        ew1 = network->addElementWise(input, *bn3->getOutput(0), ElementWiseOperation::kSUM);
+    }
+    IActivationLayer* relu3 = network->addActivation(*ew1->getOutput(0), ActivationType::kRELU);
+    assert(relu3);
+    return relu3;
+}
+
+//构造常规ResNet——IBN的bottleneck
+IActivationLayer* bottleneck_ibn(INetworkDefinition *network, std::map<std::string, Weights>& weightMap, ITensor& input, int inch, int outch, int stride, std::string lname)
+{
+    Weights emptywts{DataType::kFLOAT, nullptr, 0};
+
+    IConvolutionLayer* conv1 = network->addConvolutionNd(input, outch, DimsHW{1, 1}, weightMap[lname + "conv1.weight"], emptywts);
+    assert(conv1);
+
+    IConcatenationLayer* bn1 = addIBN(network, weightMap, *conv1->getOutput(0), lname + "bn1.");
+    IActivationLayer* relu1 = network->addActivation(*bn1->getOutput(0), ActivationType::kRELU);
+    assert(relu1);
+
+    IConvolutionLayer* conv2 = network->addConvolutionNd(*relu1->getOutput(0), outch, DimsHW{3, 3}, weightMap[lname + "conv2.weight"], emptywts);
+    assert(conv2);
+    conv2->setStrideNd(DimsHW{stride, stride});
+    conv2->setPaddingNd(DimsHW{1, 1});
+
+    IScaleLayer* bn2 = addBatchNorm2d(network, weightMap, *conv2->getOutput(0), lname + "bn2", 1e-5);
+
+    IActivationLayer* relu2 = network->addActivation(*bn2->getOutput(0), ActivationType::kRELU);
+    assert(relu2);
+
+    IConvolutionLayer* conv3 = network->addConvolutionNd(*relu2->getOutput(0), outch * 4, DimsHW{1, 1}, weightMap[lname + "conv3.weight"], emptywts);
+    assert(conv3);
+
+    IScaleLayer* bn3 = addBatchNorm2d(network, weightMap, *conv3->getOutput(0), lname + "bn3", 1e-5);
+
+    IElementWiseLayer* ew1;
+    if (stride != 1 || inch != outch * 4)
+    {
+        IConvolutionLayer* conv4 = network->addConvolutionNd(input, outch * 4, DimsHW{1, 1}, weightMap[lname + "downsample.0.weight"], emptywts);
+        assert(conv4);
+        conv4->setStrideNd(DimsHW{stride, stride});
+
+        IScaleLayer* bn4 = addBatchNorm2d(network, weightMap, *conv4->getOutput(0), lname + "downsample.1", 1e-5);
+        ew1 = network->addElementWise(*bn4->getOutput(0), *bn3->getOutput(0), ElementWiseOperation::kSUM);
+    }
+
+    else
+    {
+        ew1 = network->addElementWise(input, *bn3->getOutput(0), ElementWiseOperation::kSUM);
+    }
+
+    IActivationLayer* relu3 = network->addActivation(*ew1->getOutput(0), ActivationType::kRELU);
+    assert(relu3);
+
+    return relu3;
+}
+
+//创建引擎
+ICudaEngine* createEngine(unsigned int maxBatchSize, IBuilder* builder, IBuilderConfig* config, DataType dt)
+{
+    INetworkDefinition* network = builder ->createNetworkV2(0U);
+
+    ITensor* data = network->addInput(INPUT_BLOB_NAME, dt, Dims3{3, INPUT_H, INPUT_W});
+    assert(data);
+
+    std::map<std::string, Weights> weightMap = loadWeights("../resnet50_ibn_a.wts");
+    Weights emptywts{DataType::kFLOAT, nullptr, 0};
+
+    IConvolutionLayer* conv1 = network ->addConvolutionNd(*data, 64, DimsHW{7, 7}, weightMap["conv1.weight"], emptywts);
+    assert(conv1);
+    conv1 ->setStrideNd(DimsHW{2,2});
+    conv1 ->setPaddingNd(DimsHW{3, 3});
+
+    IScaleLayer* bn1 = addBatchNorm2d(network, weightMap, *conv1->getOutput(0), "bn1", 1e-5);
+    IActivationLayer* relu1 = network ->addActivation(*bn1->getOutput(0), ActivationType::kRELU);
+    assert(relu1);
+
+    IPoolingLayer* pool1 = network->addPoolingNd(*relu1->getOutput(0), PoolingType::kMAX, DimsHW{3, 3});
+    assert(pool1);
+    pool1->setStrideNd(DimsHW{2, 2});
+    pool1->setPaddingNd(DimsHW{1, 1});
+
+    IActivationLayer* x = bottleneck_ibn(network, weightMap, *pool1->getOutput(0), 64, 64, 1, "layer1.0.");
+    x = bottleneck_ibn(network, weightMap, *x->getOutput(0), 256, 64, 1, "layer1.1.");
+    x = bottleneck_ibn(network, weightMap, *x->getOutput(0), 256, 64, 1, "layer1.2.");
+
+    x = bottleneck_ibn(network, weightMap, *x->getOutput(0), 256, 128, 2, "layer2.0.");
+    x = bottleneck_ibn(network, weightMap, *x->getOutput(0), 512, 128, 1, "layer2.1.");
+    x = bottleneck_ibn(network, weightMap, *x->getOutput(0), 512, 128, 1, "layer2.2.");
+    x = bottleneck_ibn(network, weightMap, *x->getOutput(0), 512, 128, 1, "layer2.3.");
+
+    x = bottleneck_ibn(network, weightMap, *x->getOutput(0), 512, 256, 2, "layer3.0.");
+    x = bottleneck_ibn(network, weightMap, *x->getOutput(0), 1024, 256, 1, "layer3.1.");
+    x = bottleneck_ibn(network, weightMap, *x->getOutput(0), 1024, 256, 1, "layer3.2.");
+    x = bottleneck_ibn(network, weightMap, *x->getOutput(0), 1024, 256, 1, "layer3.3.");
+    x = bottleneck_ibn(network, weightMap, *x->getOutput(0), 1024, 256, 1, "layer3.4.");
+    x = bottleneck_ibn(network, weightMap, *x->getOutput(0), 1024, 256, 1, "layer3.5.");
+
+    x = bottleneck(network, weightMap, *x->getOutput(0), 1024, 512, 2, "layer4.0.");
+    x = bottleneck(network, weightMap, *x->getOutput(0), 2048, 512, 1, "layer4.1.");
+    x = bottleneck(network, weightMap, *x->getOutput(0), 2048, 512, 1, "layer4.2.");
+
+    IPoolingLayer* pool2 = network->addPoolingNd(*x->getOutput(0), PoolingType::kAVERAGE, DimsHW{7, 7});
+    assert(pool2);
+    pool2->setStrideNd(DimsHW{1, 1});
+
+    IFullyConnectedLayer* fc1 = network->addFullyConnected(*pool2->getOutput(0), 1000, weightMap["fc.weight"], weightMap["fc.bias"]);
+    assert(fc1);
+
+    fc1->getOutput(0)->setName(OUTPUT_BLOB_NAME);
+    std::cout<<"set name out" <<std::endl;
+    network->markOutput(*fc1->getOutput(0));
+
+    //build engine
+    builder->setMaxBatchSize(maxBatchSize);
+    config->setMaxWorkspaceSize(1<<20);
+    ICudaEngine* engine = builder->buildEngineWithConfig(*network, *config);
+    std::cout<<"build out" << std::endl;
+
+    network->destroy();
+
+    //release host memory
+    for (auto& mem:weightMap)
+    {
+        free((void *)(mem.second.values));
+    }
+    return engine;
+}
+
+
+void APIToModel(unsigned int maxBatchSize, IHostMemory** modelStream)
+{
+    //create builder
+    IBuilder* builder = createInferBuilder(gLogger);
+    IBuilderConfig* config = builder ->createBuilderConfig();
+
+    //create model to populate the network, then set the output and create an engine
+    ICudaEngine* engine = createEngine(maxBatchSize, builder, config, DataType::kFLOAT);
+    assert(engine!= nullptr);
+
+    //serialize the engine
+    (*modelStream) = engine->serialize();
+
+    engine->destroy();
+    builder->destroy();
+    config->destroy();
+}
+
+
+int main()
+{
+    IHostMemory* modelStream{nullptr};
+    APIToModel(1, &modelStream);
+    assert(modelStream != nullptr);
+    std::cout<<"start generate engine ......" << std::endl;
+    std::ofstream p("resnet50_ibn_a.engine", std::ios::binary);
+    if (!p)
+    {
+        std::cerr<<"could not open plan output file" << std::endl;
+        return -1;
+    }
+    p.write(reinterpret_cast<const char*>(modelStream->data()), modelStream->size());
+    std::cout<<"Done generate engine !!!" << std::endl;
+    modelStream->destroy();
+    return 1;
+}
