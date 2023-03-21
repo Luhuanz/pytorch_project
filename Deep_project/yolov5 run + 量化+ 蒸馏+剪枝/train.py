@@ -133,19 +133,25 @@ def train(hyp, opt, device, callbacks):  # hyp is path/to/hyp.yaml or hyp dictio
 
     # Model
     check_suffix(weights, '.pt')  # check weights
+#判断传入的权重文件是否以'.pt'结尾，如果是则认为是预训练的权重文件。如果不是，则认为是初始化的权重参数。这通常在初始化网络的时候会用到。
     pretrained = weights.endswith('.pt')
     if pretrained:
         with torch_distributed_zero_first(LOCAL_RANK):
+           #ttempt_download(weights) 方法尝试下载本地不存在的模型参数文件，
             weights = attempt_download(weights)  # download if not found locally
         ckpt = torch.load(weights, map_location='cpu')  # load checkpoint to CPU to avoid CUDA memory leak
         model = Model(cfg or ckpt['model'].yaml, ch=3, nc=nc, anchors=hyp.get('anchors')).to(device)  # create
+        #如果提供了anchors，则使用指定的anchors，否则会根据数据集的类别数自动生成。
         exclude = ['anchor'] if (cfg or hyp.get('anchors')) and not resume else []  # exclude keys
         csd = ckpt['model'].float().state_dict()  # checkpoint state_dict as FP32
         csd = intersect_dicts(csd, model.state_dict(), exclude=exclude)  # intersect
         model.load_state_dict(csd, strict=False)  # load
         LOGGER.info(f'Transferred {len(csd)}/{len(model.state_dict())} items from {weights}')  # report
     else:
+        #一般是由数据集决定的，用于进行目标检测的网络中，通过锚框对目标进行定位。
         model = Model(cfg, ch=3, nc=nc, anchors=hyp.get('anchors')).to(device)  # create
+#  check_amp(model) 是一个函数调用，其作用是检查当前是否开启了 AMP (Automatic Mixed Precision，自动混合精度)。
+    # 在 PyTorch 中使用 AMP 可以让模型在训练过程中使用不同精度的浮点数计算，从而减少显存的使用和加速训练 True表示启用
     amp = check_amp(model)  # check AMP
 
     # Freeze
@@ -158,28 +164,37 @@ def train(hyp, opt, device, callbacks):  # hyp is path/to/hyp.yaml or hyp dictio
             v.requires_grad = False
 
     # Image size
+#计算当前模型的最大步长（stride）和32的最大值，然后取二者的最大值作为当前图像的下采样率（也就是特征图的大小相对于输入图像的大小降低的倍数）。
     gs = max(int(model.stride.max()), 32)  # grid size (max stride)
+
+#确保图像尺寸（imgsz）是一个给定步幅（stride）的倍数
     imgsz = check_img_size(opt.imgsz, gs, floor=gs * 2)  # verify imgsz is gs-multiple
 
+    # 在单卡训练时估计最佳的batch size大小。
+    # 如果命令行参数中指定了batch size，则会直接使用命令行参数中指定的batch size大小，否则会尝试估计最佳batch size大小。
+    # 如果分布式则跳过该代码
     # Batch size
     if RANK == -1 and batch_size == -1:  # single-GPU only, estimate best batch size
         batch_size = check_train_batch_size(model, imgsz, amp)
         loggers.on_params_update({"batch_size": batch_size})
 
     # Optimizer
+
     nbs = 64  # nominal batch size
     accumulate = max(round(nbs / batch_size), 1)  # accumulate loss before optimizing
     hyp['weight_decay'] *= batch_size * accumulate / nbs  # scale weight_decay
     optimizer = smart_optimizer(model, opt.optimizer, hyp['lr0'], hyp['momentum'], hyp['weight_decay'])
-
+#动态调整学习率
     # Scheduler
     if opt.cos_lr:
-        lf = one_cycle(1, hyp['lrf'], epochs)  # cosine 1->hyp['lrf']
+        lf = one_cycle(1, hyp['lrf'], epochs)  # cosine 1->hyp['lrf'] opt.cos_lr=True，则使用余弦退火的方式来调整学习率，即从初始学习率到最低学习率进行一个周期的余弦函数变化。
     else:
-        lf = lambda x: (1 - x / epochs) * (1.0 - hyp['lrf']) + hyp['lrf']  # linear
+        lf = lambda x: (1 - x / epochs) * (1.0 - hyp['lrf']) + hyp['lrf']  # linear 则使用线性方式来逐步降低学习率。
+   #生成对象
     scheduler = lr_scheduler.LambdaLR(optimizer, lr_lambda=lf)  # plot_lr_scheduler(optimizer, scheduler, epochs)
 
     # EMA
+#这行代码定义了一个 ModelEMA 对象并将其赋值给变量 ema。 ModelEMA 是一种模型的平均算法，可以在训练过程中使用。该算法通过维护一个模型的指数移动平均值，来减少模型的抖动和过拟合。
     ema = ModelEMA(model) if RANK in {-1, 0} else None
 
     # Resume
@@ -244,9 +259,11 @@ def train(hyp, opt, device, callbacks):  # hyp is path/to/hyp.yaml or hyp dictio
 
     # DDP mode
     if cuda and RANK != -1:
+    #是一个函数，用于将PyTorch模型转换为分布式数据并行模型（DistributedDataParallel，DDP）
         model = smart_DDP(model)
 
     # Model attributes
+#经过DDP包装的模型（即使用了分布式数据并行）中最后一个检测层的数量，并将其存储在变量nl中。后续会用到这个变量来缩放一些超参数。
     nl = de_parallel(model).model[-1].nl  # number of detection layers (to scale hyps)
     hyp['box'] *= 3 / nl  # scale to layers
     hyp['cls'] *= nc / 80 * 3 / nl  # scale to classes and layers
