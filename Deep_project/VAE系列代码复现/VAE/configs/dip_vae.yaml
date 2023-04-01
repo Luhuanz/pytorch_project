@@ -1,0 +1,31 @@
+model_params:
+  name: 'DIPVAE'
+  in_channels: 3
+  latent_dim: 128
+  lambda_diag: 0.05
+  lambda_offdiag: 0.1
+
+
+data_params:
+  data_path: "Data/"
+  train_batch_size: 64
+  val_batch_size:  64
+  patch_size: 64
+  num_workers: 4
+
+
+exp_params:
+  LR: 0.001
+  weight_decay: 0.0
+  scheduler_gamma: 0.97
+  kld_weight: 1
+  manual_seed: 1265
+
+trainer_params:
+  gpus: [1]
+  max_epochs: 10
+
+logging_params:
+  save_dir: "logs/"
+  name: "DIPVAE"
+  manual_seed: 1265

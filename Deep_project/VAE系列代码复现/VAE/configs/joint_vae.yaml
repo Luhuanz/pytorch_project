@@ -1,0 +1,41 @@
+model_params:
+  name: 'JointVAE'
+  in_channels: 3
+  latent_dim: 512
+  categorical_dim: 40
+  latent_min_capacity: 0.0
+  latent_max_capacity: 20.0
+  latent_gamma: 10.
+  latent_num_iter: 25000
+  categorical_min_capacity: 0.0
+  categorical_max_capacity: 20.0
+  categorical_gamma: 10.
+  categorical_num_iter: 25000
+  temperature: 0.5
+  anneal_rate: 0.00003
+  anneal_interval: 100
+  alpha: 10.0
+
+data_params:
+  data_path: "Data/"
+  train_batch_size: 64
+  val_batch_size:  64
+  patch_size: 64
+  num_workers: 4
+
+
+exp_params:
+  LR: 0.005
+  weight_decay: 0.0
+  scheduler_gamma: 0.95
+  kld_weight: 0.00025
+  manual_seed: 1265
+
+trainer_params:
+  gpus: [1]
+  max_epochs: 10
+
+logging_params:
+  save_dir: "logs/"
+  name: "JointVAE"
+
