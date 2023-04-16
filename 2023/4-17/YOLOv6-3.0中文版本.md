@@ -1,6 +1,6 @@
 ![](https://files.mdnice.com/user/33808/dc8410e3-56c5-4815-ad71-5268c10b986c.png)
 
->YOLO社区自前两次发布一直情绪高涨！随着中国农历新年2023（兔年）的到来，美团对YOLOv6进行了许多新的网络架构和训练方案改进。此版本标识为YOLOv6 v3.0。
+>YOLO社区自前两次发布以来一直情绪高涨！随着中国农历新年2023（兔年）的到来，美团对YOLOv6进行了许多新的网络架构和训练方案改进。此版本标识为YOLOv6 v3.0。
 >
 >对于性能，YOLOv6-N在COCO数据集上的AP为37.5%，通过NVIDIA Tesla T4 GPU测试的吞吐量为1187 FPS。YOLOv6-S以484 FPS的速度得到了超过45.0%的AP，超过了相同规模的其他主流检测器（YOLOv5-S、YOLOv8-S、YOLOX-S和PPYOLOE-S）。
 >
