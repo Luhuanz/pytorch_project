@@ -1,0 +1,15 @@
+[
+        {"label": "ceiling","id": 1,"color": [152,223,138]}, 
+        {"label": "floor","id": 2,"color": [174,199,232]},
+        {"label": "wall","id": 3,"color": [255,127,14]},  
+        {"label": "beam","id": 4,"color": [91,163,138]}, 
+        {"label": "column","id": 5,"color": [255,187,120]},
+        {"label": "window","id": 6,"color": [188,189,34]},
+        {"label": "door","id": 7,"color": [140,86,75]}, 
+        {"label": "table","id": 8,"color": [255,152,150]},
+        {"label": "chair","id": 9,"color": [214,39,40]}, 
+        {"label": "sofa","id": 10,"color": [197,176,213]},
+        {"label": "bookcase","id": 11,"color": [196,156,148]},
+        {"label": "board","id": 12,"color": [23,190,207]}, 
+        {"label": "clutter","id": 13,"color": [112,128,144]}
+]
