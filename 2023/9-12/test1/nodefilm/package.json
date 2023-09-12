@@ -1,0 +1,20 @@
+{
+  "name": "expresstemplate",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "dev":"nodemon ./app.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git@gitee.com:beiyaoyaoyao/express-template.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "express": "^4.17.3",
+    "nodemon": "^2.0.15"
+  }
+}
