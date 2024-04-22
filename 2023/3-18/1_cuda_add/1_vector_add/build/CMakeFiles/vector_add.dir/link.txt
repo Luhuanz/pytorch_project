@@ -1,1 +1,0 @@
-/usr/bin/c++    -rdynamic CMakeFiles/vector_add.dir/vector_add_generated_vector_add.cu.o  -o vector_add /usr/local/cuda-10.2/lib64/libcudart_static.a -lpthread -ldl -lrt 

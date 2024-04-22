@@ -1,3 +1,0 @@
-/media/u1/deeplearning/3-17/resnet_50_trt/build/CMakeFiles/rebuild_cache.dir
-/media/u1/deeplearning/3-17/resnet_50_trt/build/CMakeFiles/edit_cache.dir
-/media/u1/deeplearning/3-17/resnet_50_trt/build/CMakeFiles/resnet50.dir

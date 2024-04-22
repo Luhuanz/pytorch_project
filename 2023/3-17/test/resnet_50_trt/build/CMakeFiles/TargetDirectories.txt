@@ -1,3 +1,0 @@
-/home/chaucer/Desktop/TRT_Learning/resnet_50_trt/build/CMakeFiles/rebuild_cache.dir
-/home/chaucer/Desktop/TRT_Learning/resnet_50_trt/build/CMakeFiles/edit_cache.dir
-/home/chaucer/Desktop/TRT_Learning/resnet_50_trt/build/CMakeFiles/resnet50.dir

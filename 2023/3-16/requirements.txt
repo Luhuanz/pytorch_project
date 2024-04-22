@@ -1,4 +1,0 @@
-futures
-transformers==3.1
-loguru
-tensorboard

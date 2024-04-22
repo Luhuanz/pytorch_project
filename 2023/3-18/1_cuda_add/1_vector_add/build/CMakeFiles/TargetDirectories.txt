@@ -1,3 +1,0 @@
-/home/chaucerg/Desktop/cuda_learning/learning_gzh/1_vector_add/build/CMakeFiles/rebuild_cache.dir
-/home/chaucerg/Desktop/cuda_learning/learning_gzh/1_vector_add/build/CMakeFiles/vector_add.dir
-/home/chaucerg/Desktop/cuda_learning/learning_gzh/1_vector_add/build/CMakeFiles/edit_cache.dir
