@@ -48,7 +48,7 @@ CV Note: 计算机视觉笔记
 - SDNE
 ## 🧮 LLMs
 Large Model Notes: 大模型相关的 50 篇笔记
-🕵️ Machine Learning Algorithms
+## 🕵️ Machine Learning Algorithms
 Fraud Detection: 欺诈检测算法
 ## 🔄 ONNX
 - Sklearn ONNX: Sklearn 模型转 ONNX
