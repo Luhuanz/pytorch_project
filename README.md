@@ -63,6 +63,7 @@ Matlab Optimization Implementation: Matlab 优化实现
 SQL Notes: SQL 笔记
 ## 🤖 Transformer
 Complete Guide to Transformers: Transformer 模型完全解读
+## langchain 
 
 ## 结束语
 感谢您访问此仓库！我们希望您能在这里找到对您的学习和研究有价值的资源。如果您有任何反馈或建议，请通过 Issue 或 Pull Requests 与我们分享。希望这些资源能助您一臂之力，共同推动深度学习和机器学习领域的发展。
